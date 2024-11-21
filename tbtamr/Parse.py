@@ -89,11 +89,17 @@ class Vcf(object):
 
     def top_ann(self,nfo, genes ) -> dict:
 
+        af = None
+
         a = (i for i in nfo.split(';') if 'ANN' in i)
         ao = [i for i in nfo.split(';') if 'AO=' in i]
         dp = [i for i in nfo.split(';') if 'DP=' in i]
         lof = [i for i in nfo.split(';') if 'LOF' in i]
-        af = self.calc_af(ao = ao , dp = dp)
+        af = [i for i in nfo.split(';') if 'AF' in i]
+
+        if af is None:
+            af = self.calc_af(ao = ao , dp = dp)
+        
         res = (r for r in a )
         annots = (v.split(',') for v in res)
         for annot in annots:
@@ -130,16 +136,24 @@ class Vcf(object):
         ao = False
         dp = False
         snpeff = False
+        af = False
 
         for record in header:
-            if 'INFO=<ID=AO' in record:
+            if "INFO=<ID=AF" in record:
+                af = True
+            elif 'INFO=<ID=AO' in record:
                 ao = True
             elif 'INFO=<ID=DP' in record:
                 dp = True
             elif 'SnpEffCmd' in record:
                 snpeff = True
+
+            if af or dp and ao:
+                af_bool = True
+            else:
+                af_bool = False
         
-        return ao and dp, snpeff
+        return af_bool, snpeff
         
     def try_annotate(self, vcf_file) -> str:
 
